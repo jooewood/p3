@@ -243,16 +243,20 @@ def configure_s3_trigger(function_arn, bucket_name):
             try:
                 policy = json.loads(lambda_client.get_policy(FunctionName=LAMBDA_FUNCTION_NAME)['Policy'])
                 for statement in policy['Statement']:
-                    if 'Condition' in statement and 'ArnLike' in statement['Condition']['AWS:SourceArn']:
-                        if f"arn:aws:s3:::{bucket_name}" in statement['Condition']['ArnLike']['AWS:SourceArn']:
-                            sid = statement['Sid']
-                            print(f"Removing existing S3 trigger permission with Sid: {sid}")
-                            lambda_client.remove_permission(
-                                FunctionName=LAMBDA_FUNCTION_NAME,
-                                StatementId=sid
-                            )
-                            print(f"Removed old permission for {bucket_name}.")
-                            break
+                    # Safely get 'Condition' and then 'AWS:SourceArn'
+                    condition = statement.get('Condition', {})
+                    arn_like_condition = condition.get('ArnLike', {})
+                    source_arn = arn_like_condition.get('AWS:SourceArn')
+
+                    if source_arn and f"arn:aws:s3:::{bucket_name}" in source_arn:
+                        sid = statement['Sid']
+                        print(f"Removing existing S3 trigger permission with Sid: {sid}")
+                        lambda_client.remove_permission(
+                            FunctionName=LAMBDA_FUNCTION_NAME,
+                            StatementId=sid
+                        )
+                        print(f"Removed old permission for {bucket_name}.")
+                        break
             except ClientError as e:
                 if e.response['Error']['Code'] == 'ResourceNotFoundException':
                     print("Lambda policy not found, will add permission.")
