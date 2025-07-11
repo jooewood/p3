@@ -116,7 +116,84 @@ def create_or_update_lambda_function(image_uri, role_arn):
     Creates or updates the AWS Lambda function.
     """
     print(f"\nCreating or updating Lambda function: {LAMBDA_FUNCTION_NAME}")
+    function_exists = False
     try:
+        # Check if function already exists
+        lambda_client.get_function_configuration(FunctionName=LAMBDA_FUNCTION_NAME)
+        function_exists = True
+        print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' already exists.")
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ResourceNotFoundException':
+            function_exists = False
+            print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' does not exist. Creating new function.")
+        else:
+            print(f"Error checking Lambda function existence: {e}")
+            raise
+
+    if function_exists:
+        # If function exists, wait for any previous updates to complete
+        print(f"Waiting for any ongoing update for '{LAMBDA_FUNCTION_NAME}' to complete before proceeding...")
+        waiter = lambda_client.get_waiter('function_updated')
+        try:
+            waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME)
+            print(f"Previous update for '{LAMBDA_FUNCTION_NAME}' has completed. Proceeding with updates.")
+        except Exception as e:
+            # If waiter fails, it might be due to a stuck state or other issues.
+            # We can still attempt to update, but log the warning.
+            print(f"Warning: Waiter for function_updated failed. May proceed with update if function is not stuck. Error: {e}")
+
+        current_config = lambda_client.get_function_configuration(FunctionName=LAMBDA_FUNCTION_NAME)
+        current_image_uri = current_config['Code']['ImageUri']
+        current_timeout = current_config['Timeout']
+        current_memory = current_config['MemorySize']
+        current_role_arn = current_config['Role']
+        current_env_vars = current_config.get('Environment', {}).get('Variables', {})
+
+        # Check if code update is needed
+        if current_image_uri != image_uri:
+            print(f"Updating Lambda function code for '{LAMBDA_FUNCTION_NAME}' with new image URI: {image_uri}")
+            lambda_client.update_function_code(
+                FunctionName=LAMBDA_FUNCTION_NAME,
+                ImageUri=image_uri
+            )
+            print(f"Waiting for code update for '{LAMBDA_FUNCTION_NAME}' to complete...")
+            waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME) # Wait for code update to finish
+            print(f"Code update for '{LAMBDA_FUNCTION_NAME}' has completed.")
+        else:
+            print(f"Lambda function code for '{LAMBDA_FUNCTION_NAME}' is already up to date.")
+
+        # Check if configuration update is needed
+        # Create a dictionary for desired environment variables
+        desired_env_vars = {
+            'INPUT_BUCKET_NAME': INPUT_BUCKET_NAME,
+            'OUTPUT_BUCKET_NAME': OUTPUT_BUCKET_NAME,
+            'DYNAMODB_TABLE_NAME': DYNAMODB_TABLE_NAME
+        }
+
+        if (current_timeout != LAMBDA_TIMEOUT or
+            current_memory != LAMBDA_MEMORY or
+            current_role_arn != role_arn or
+            current_env_vars != desired_env_vars):
+            print(f"Updating Lambda function configuration for '{LAMBDA_FUNCTION_NAME}'...")
+            lambda_client.update_function_configuration(
+                FunctionName=LAMBDA_FUNCTION_NAME,
+                Role=role_arn,
+                Timeout=LAMBDA_TIMEOUT,
+                MemorySize=LAMBDA_MEMORY,
+                Environment={
+                    'Variables': desired_env_vars
+                }
+            )
+            print(f"Waiting for configuration update for '{LAMBDA_FUNCTION_NAME}' to complete...")
+            waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME) # Wait for config update to finish
+            print(f"Configuration update for '{LAMBDA_FUNCTION_NAME}' has completed.")
+        else:
+            print(f"Lambda function configuration for '{LAMBDA_FUNCTION_NAME}' is already up to date.")
+
+        print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' updated successfully.")
+        return lambda_client.get_function_configuration(FunctionName=LAMBDA_FUNCTION_NAME)['FunctionArn']
+
+    else: # Function does not exist, create it
         response = lambda_client.create_function(
             FunctionName=LAMBDA_FUNCTION_NAME,
             Role=role_arn,
@@ -124,8 +201,6 @@ def create_or_update_lambda_function(image_uri, role_arn):
                 'ImageUri': image_uri
             },
             PackageType='Image',
-            # Removed 'Handler' parameter as it's not supported for container images
-            # Removed 'Runtime' parameter as it's not supported for container images
             Timeout=LAMBDA_TIMEOUT,
             MemorySize=LAMBDA_MEMORY,
             Environment={
@@ -137,49 +212,12 @@ def create_or_update_lambda_function(image_uri, role_arn):
             }
         )
         print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' created successfully.")
+        # After creation, wait for it to be active
+        print(f"Waiting for Lambda function '{LAMBDA_FUNCTION_NAME}' to become active...")
+        waiter = lambda_client.get_waiter('function_active')
+        waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME)
+        print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' is now active.")
         return response['FunctionArn']
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ResourceConflictException':
-            print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' already exists. Attempting to update.")
-            # Wait for any in-progress update to complete before proceeding
-            print(f"Waiting for any ongoing update for '{LAMBDA_FUNCTION_NAME}' to complete...")
-            # Use 'function_updated' waiter which checks LastUpdateStatus
-            waiter = lambda_client.get_waiter('function_updated')
-            waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME)
-            print(f"Previous update for '{LAMBDA_FUNCTION_NAME}' has completed. Proceeding with new update.")
-
-            response = lambda_client.update_function_code(
-                FunctionName=LAMBDA_FUNCTION_NAME,
-                ImageUri=image_uri
-            )
-            # After updating code, wait for that update to complete before updating configuration
-            print(f"Waiting for code update for '{LAMBDA_FUNCTION_NAME}' to complete...")
-            waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME)
-            print(f"Code update for '{LAMBDA_FUNCTION_NAME}' has completed. Proceeding with configuration update.")
-
-            lambda_client.update_function_configuration(
-                FunctionName=LAMBDA_FUNCTION_NAME,
-                Role=role_arn,
-                # Removed 'Handler' parameter for consistency
-                # Removed 'Runtime' parameter for consistency
-                Timeout=LAMBDA_TIMEOUT,
-                MemorySize=LAMBDA_MEMORY,
-                Environment={
-                    'Variables': {
-                        'INPUT_BUCKET_NAME': INPUT_BUCKET_NAME,
-                        'OUTPUT_BUCKET_NAME': OUTPUT_BUCKET_NAME,
-                        'DYNAMODB_TABLE_NAME': DYNAMODB_TABLE_NAME
-                    }
-                }
-            )
-            print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' updated successfully.")
-            return response['FunctionArn']
-        else:
-            print(f"Error creating/updating Lambda function: {e}")
-            raise
-    except Exception as e:
-        print(f"An unexpected error occurred while creating/updating Lambda function: {e}")
-        raise
 
 def configure_s3_trigger(function_arn, bucket_name):
     """
