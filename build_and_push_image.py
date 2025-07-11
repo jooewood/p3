@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 
 # Import configuration
 from config import (
-    AWS_REGION, INPUT_BUCKET_NAME, LAMBDA_FUNCTION_NAME, LAMBDA_HANDLER,
+    AWS_REGION, INPUT_BUCKET_NAME, LAMBDA_FUNCTION_NAME,
     LAMBDA_TIMEOUT, LAMBDA_MEMORY, ECR_REPOSITORY_NAME, LAMBDA_ROLE_NAME,
     OUTPUT_BUCKET_NAME, DYNAMODB_TABLE_NAME
 )
@@ -170,6 +170,7 @@ def create_or_update_lambda_function(image_uri, role_arn):
             print(f"Waiting for code update for '{LAMBDA_FUNCTION_NAME}' to complete...")
             waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME) # Wait for code update to finish
             print(f"Code update for '{LAMBDA_FUNCTION_NAME}' has completed.")
+            time.sleep(5) # Add a small delay after code update
         else:
             print(f"Lambda function code for '{LAMBDA_FUNCTION_NAME}' is already up to date.")
 
@@ -198,6 +199,7 @@ def create_or_update_lambda_function(image_uri, role_arn):
             print(f"Waiting for configuration update for '{LAMBDA_FUNCTION_NAME}' to complete...")
             waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME) # Wait for config update to finish
             print(f"Configuration update for '{LAMBDA_FUNCTION_NAME}' has completed.")
+            time.sleep(5) # Add a small delay after configuration update
         else:
             print(f"Lambda function configuration for '{LAMBDA_FUNCTION_NAME}' is already up to date.")
 
@@ -228,6 +230,7 @@ def create_or_update_lambda_function(image_uri, role_arn):
         waiter = lambda_client.get_waiter('function_active')
         waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME)
         print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' is now active.")
+        time.sleep(5) # Add a small delay after creation
         return response['FunctionArn']
 
 def configure_s3_trigger(function_arn, bucket_name):
