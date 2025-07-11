@@ -140,7 +140,13 @@ def create_or_update_lambda_function(image_uri, role_arn):
         return response['FunctionArn']
     except ClientError as e:
         if e.response['Error']['Code'] == 'ResourceConflictException':
-            print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' already exists. Updating it.")
+            print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' already exists. Attempting to update.")
+            # Wait for the function to be active before attempting to update
+            print(f"Waiting for Lambda function '{LAMBDA_FUNCTION_NAME}' to be active...")
+            waiter = lambda_client.get_waiter('function_active')
+            waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME)
+            print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' is now active. Proceeding with update.")
+
             response = lambda_client.update_function_code(
                 FunctionName=LAMBDA_FUNCTION_NAME,
                 ImageUri=image_uri
