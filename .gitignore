@@ -3,6 +3,7 @@
 *.pyc
 __pycache__/
 key.py
+env.list
 
 # Virtual environment
 venv/
