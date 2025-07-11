@@ -1,0 +1,37 @@
+/test_cases
+# Byte-code files
+*.pyc
+__pycache__/
+key.py
+
+# Virtual environment
+venv/
+.venv/
+
+# Editor/IDE specific files
+.idea/  # PyCharm
+.vscode/ # VS Code
+*.sublime-project
+*.sublime-workspace
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Test/Coverage files
+.coverage
+.tox/
+htmlcov/
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Distribution / build files
+dist/
+build/
+*.egg-info/
+
+# Configuration files (if they contain sensitive data)
+config.ini
+.env
