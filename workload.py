@@ -177,7 +177,7 @@ def main_workload_generator():
     # Define the hardcoded mapping file path
     # Assumes 'mapping.txt' is in the same directory as workload.py
     current_script_dir = os.path.dirname(os.path.abspath(__file__))
-    mapping_file_path = os.path.join(current_script_dir, 'mapping.txt')
+    mapping_file_path = os.path.join(current_script_dir, 'mapping')
 
     if mode_arg == 'run':
         if not test_file_arg:
