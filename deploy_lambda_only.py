@@ -1,10 +1,10 @@
-# build_and_push_image.py
+# deploy_lambda_only.py
 
 import os
 import json
 import subprocess
 import time
-import sys # Import sys for command-line arguments
+import sys
 from boto3 import client as boto3_client
 from botocore.exceptions import ClientError
 
@@ -46,49 +46,6 @@ def get_ecr_repository_uri():
     except Exception as e:
         print(f"An unexpected error occurred while retrieving ECR repository URI: {e}")
         raise
-
-def build_and_push_docker_image(repo_uri):
-    """
-    Builds the Docker image and pushes it to ECR.
-    """
-    print("\n--- Building and Pushing Docker Image ---")
-    image_tag = f"{repo_uri}:latest"
-
-    # 1. Login to ECR
-    print("Logging in to ECR...")
-    try:
-        cmd = ["aws", "ecr", "get-login-password", "--region", AWS_REGION]
-        login_password = subprocess.check_output(cmd).decode('utf-8').strip()
-
-        login_cmd = f"docker login --username AWS --password-stdin {repo_uri.split('/')[0]}"
-        process = subprocess.Popen(login_cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate(input=login_password.encode())
-        if process.returncode != 0:
-            raise Exception(f"Docker login failed: {stderr.decode()}")
-        print("Docker login successful.")
-    except Exception as e:
-        print(f"Error logging into ECR: {e}")
-        raise
-
-    # 2. Build Docker image
-    print(f"Building Docker image: {image_tag}")
-    try:
-        subprocess.run(["docker", "build", "-t", image_tag, "."], check=True)
-        print("Docker image built successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Docker build failed: {e}")
-        raise
-
-    # 3. Push Docker image to ECR
-    print(f"Pushing Docker image to ECR: {image_tag}")
-    try:
-        subprocess.run(["docker", "push", image_tag], check=True)
-        print("Docker image pushed to ECR successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Docker push failed: {e}")
-        raise
-
-    return image_tag
 
 def get_iam_role_arn():
     """
@@ -310,35 +267,16 @@ def configure_s3_trigger(function_arn, bucket_name):
 
 def main():
     """
-    Main function to build/push Docker image and deploy/update Lambda function.
-    Accepts 'skip_docker_build_push' argument to skip Docker operations.
+    Main function to deploy/update Lambda function.
+    Assumes Docker image is already pushed to ECR.
     """
-    # Parse command-line arguments
-    args = {}
-    for arg in sys.argv[1:]:
-        if '=' in arg:
-            key, value = arg.split('=', 1)
-            args[key] = value
-
-    skip_docker_build_push = args.get('skip_docker_build_push', 'False').lower() == 'true'
-
-    print("--- Starting Docker Image Build/Push and Lambda Deployment ---")
-    if skip_docker_build_push:
-        print("Skipping Docker image build and push as 'skip_docker_build_push' is True.")
-    else:
-        print("Proceeding with Docker image build and push.")
+    print("--- Starting Lambda Deployment ---")
 
     # Get ECR Repository URI (assumes it's created by setup.py)
     repo_uri = get_ecr_repository_uri()
-
-    # Build and Push Docker Image (conditional)
-    if not skip_docker_build_push:
-        image_uri = build_and_push_docker_image(repo_uri)
-    else:
-        # If skipping build/push, assume the image is already at the latest tag in ECR
-        image_uri = f"{repo_uri}:latest"
-        print(f"Assuming image URI: {image_uri} (from ECR repository URI and 'latest' tag).")
-
+    # Assume the image is already at the latest tag in ECR
+    image_uri = f"{repo_uri}:latest"
+    print(f"Using ECR Image URI: {image_uri}")
 
     # Get IAM Role ARN (assumes it's created by setup.py)
     role_arn = get_iam_role_arn()
@@ -349,7 +287,7 @@ def main():
     # Configure S3 Trigger
     configure_s3_trigger(function_arn, INPUT_BUCKET_NAME)
 
-    print("\n--- Docker Image Build/Push and Lambda Deployment Completed Successfully ---")
+    print("\n--- Lambda Deployment Completed Successfully ---")
     print(f"Lambda Function ARN: {function_arn}")
     print(f"ECR Image URI: {image_uri}")
     print(f"IAM Role ARN: {role_arn}")
