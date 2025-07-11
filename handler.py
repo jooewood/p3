@@ -8,11 +8,11 @@ import face_recognition
 from boto3 import client as boto3_client
 
 # Import configuration from config.py
-from config import INPUT_BUCKET_NAME, OUTPUT_BUCKET_NAME, DYNAMODB_TABLE_NAME, ENCODING_FILE_NAME, CSV_HEADERS
+from config import INPUT_BUCKET_NAME, OUTPUT_BUCKET_NAME, DYNAMODB_TABLE_NAME, ENCODING_FILE_NAME, CSV_HEADERS, AWS_REGION
 
 # Initialize S3 and DynamoDB clients
-s3_client = boto3_client('s3')
-dynamodb_client = boto3_client('dynamodb')
+s3_client = boto3_client('s3', region_name=AWS_REGION)
+dynamodb_client = boto3_client('dynamodb', region_name=AWS_REGION)
 
 # Function to read the 'encoding' file
 def open_encoding(filename):
