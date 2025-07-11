@@ -52,6 +52,9 @@ COPY entry.sh /
 RUN chmod 777 /entry.sh
 
 # Copy handler function and the encoding file
+COPY key.py ${FUNCTION_DIR}
+COPY config.py ${FUNCTION_DIR}
+COPY key.py ${FUNCTION_DIR}
 COPY handler.py ${FUNCTION_DIR}
 COPY encoding ${FUNCTION_DIR}
 
