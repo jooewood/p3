@@ -121,7 +121,7 @@ def face_recognition_handler(event, context):
             'body': json.dumps('Failed to load face encodings.')
         }
 
-    known_face_encodings = known_faces_data["encodings"]
+    known_face_encodings = known_faces_data["encoding"]
     known_face_names = known_faces_data["names"]
     print(f"Loaded {len(known_face_names)} known faces.")
 
