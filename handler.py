@@ -223,32 +223,32 @@ def face_recognition_handler(event, context):
         'body': json.dumps(f'Successfully processed {video_key}. Output saved to {output_file_name}.')
     }
 
-# if __name__ == "__main__":
-#     # Import INPUT_BUCKET_NAME from config.py for local testing context
-#     # In a real Lambda environment, environment variables are passed differently.
-#     from config import INPUT_BUCKET_NAME, OUTPUT_BUCKET_NAME, DYNAMODB_TABLE_NAME
+if __name__ == "__main__":
+    # Import INPUT_BUCKET_NAME from config.py for local testing context
+    # In a real Lambda environment, environment variables are passed differently.
+    from config import INPUT_BUCKET_NAME, OUTPUT_BUCKET_NAME, DYNAMODB_TABLE_NAME
 
-#     # Simulate an S3 event for a test video
-#     # Ensure 'test_0.mp4' exists in your configured INPUT_BUCKET_NAME on S3
-#     test_video_key = "test_0.mp4"
-#     simulated_event = {
-#         "Records": [
-#             {
-#                 "s3": {
-#                     "bucket": {
-#                         "name": INPUT_BUCKET_NAME
-#                     },
-#                     "object": {
-#                         "key": test_video_key
-#                     }
-#                 }
-#             }
-#         ]
-#     }
+    # Simulate an S3 event for a test video
+    # Ensure 'test_0.mp4' exists in your configured INPUT_BUCKET_NAME on S3
+    test_video_key = "test_0.mp4"
+    simulated_event = {
+        "Records": [
+            {
+                "s3": {
+                    "bucket": {
+                        "name": INPUT_BUCKET_NAME
+                    },
+                    "object": {
+                        "key": test_video_key
+                    }
+                }
+            }
+        ]
+    }
 
-#     print(f"--- Running handler locally with simulated event for {test_video_key} ---")
-#     # Call the main handler function
-#     face_recognition_handler(simulated_event, None)
-#     print("--- Local handler execution finished ---")
+    print(f"--- Running handler locally with simulated event for {test_video_key} ---")
+    # Call the main handler function
+    face_recognition_handler(simulated_event, None)
+    print("--- Local handler execution finished ---")
 
-# # --- End of local testing block ---
+# --- End of local testing block ---
