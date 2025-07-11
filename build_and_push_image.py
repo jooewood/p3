@@ -4,14 +4,15 @@ import os
 import json
 import subprocess
 import time
+import sys # Import sys for command-line arguments
 from boto3 import client as boto3_client
 from botocore.exceptions import ClientError
 
 # Import configuration
 from config import (
-    AWS_REGION, INPUT_BUCKET_NAME, OUTPUT_BUCKET_NAME, DYNAMODB_TABLE_NAME,
-    LAMBDA_FUNCTION_NAME, LAMBDA_HANDLER,
-    LAMBDA_TIMEOUT, LAMBDA_MEMORY, ECR_REPOSITORY_NAME, LAMBDA_ROLE_NAME
+    AWS_REGION, INPUT_BUCKET_NAME, LAMBDA_FUNCTION_NAME, LAMBDA_HANDLER,
+    LAMBDA_TIMEOUT, LAMBDA_MEMORY, ECR_REPOSITORY_NAME, LAMBDA_ROLE_NAME,
+    OUTPUT_BUCKET_NAME, DYNAMODB_TABLE_NAME
 )
 # Import AWS credentials
 from key import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
@@ -124,7 +125,7 @@ def create_or_update_lambda_function(image_uri, role_arn):
             },
             PackageType='Image',
             Handler=LAMBDA_HANDLER,
-            Runtime='python3.8', # This is a placeholder, runtime for image is not directly set here
+            # Removed 'Runtime' parameter as it's not supported for container images
             Timeout=LAMBDA_TIMEOUT,
             MemorySize=LAMBDA_MEMORY,
             Environment={
@@ -147,6 +148,7 @@ def create_or_update_lambda_function(image_uri, role_arn):
             lambda_client.update_function_configuration(
                 FunctionName=LAMBDA_FUNCTION_NAME,
                 Role=role_arn,
+                # Removed 'Runtime' parameter for consistency
                 Timeout=LAMBDA_TIMEOUT,
                 MemorySize=LAMBDA_MEMORY,
                 Environment={
@@ -240,14 +242,34 @@ def configure_s3_trigger(function_arn, bucket_name):
 def main():
     """
     Main function to build/push Docker image and deploy/update Lambda function.
+    Accepts 'skip_docker_build_push' argument to skip Docker operations.
     """
+    # Parse command-line arguments
+    args = {}
+    for arg in sys.argv[1:]:
+        if '=' in arg:
+            key, value = arg.split('=', 1)
+            args[key] = value
+
+    skip_docker_build_push = args.get('skip_docker_build_push', 'False').lower() == 'true'
+
     print("--- Starting Docker Image Build/Push and Lambda Deployment ---")
+    if skip_docker_build_push:
+        print("Skipping Docker image build and push as 'skip_docker_build_push' is True.")
+    else:
+        print("Proceeding with Docker image build and push.")
 
     # Get ECR Repository URI (assumes it's created by setup.py)
     repo_uri = get_ecr_repository_uri()
 
-    # Build and Push Docker Image
-    image_uri = build_and_push_docker_image(repo_uri)
+    # Build and Push Docker Image (conditional)
+    if not skip_docker_build_push:
+        image_uri = build_and_push_docker_image(repo_uri)
+    else:
+        # If skipping build/push, assume the image is already at the latest tag in ECR
+        image_uri = f"{repo_uri}:latest"
+        print(f"Assuming image URI: {image_uri} (from ECR repository URI and 'latest' tag).")
+
 
     # Get IAM Role ARN (assumes it's created by setup.py)
     role_arn = get_iam_role_arn()
