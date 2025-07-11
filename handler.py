@@ -122,7 +122,7 @@ def face_recognition_handler(event, context):
         }
 
     known_face_encodings = known_faces_data["encoding"]
-    known_face_names = known_faces_data["names"]
+    known_face_names = known_faces_data["name"]
     print(f"Loaded {len(known_face_names)} known faces.")
 
     recognized_student_info = None
