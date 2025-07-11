@@ -149,12 +149,6 @@ def verify_output(test_case_name, mapping_file_path):
     else:
         print("\nNo files to verify accuracy.")
 
-    if all_passed:
-        print("\nAll verified outputs passed!")
-    else:
-        print("\nSome output verifications failed.")
-    return all_passed
-
 def main_workload_generator():
     """
     Main function to run the workload generator.
