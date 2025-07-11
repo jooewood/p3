@@ -197,7 +197,7 @@ def main_workload_generator():
         print("\n--- Waiting for Lambda processing to complete")
         # A more robust solution would poll S3 for output files or use SQS/SNS for completion
         # For simplicity, we'll wait a fixed amount of time. Adjust as needed.
-        time.sleep(10) # Wait for each video to process
+        time.sleep(30) # Wait for each video to process
         
         verify_output(test_case_name, mapping_file_path) # Pass hardcoded mapping file path
         print(f"\n--- Workload for Test Case: {test_case_name} Completed ---")
