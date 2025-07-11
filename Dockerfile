@@ -2,7 +2,7 @@
 
 # Define global args
 ARG FUNCTION_DIR="/home/app/"
-ARG RUNTIME_VERSION="3.8"
+ARG RUNTIME_VERSION="3.10"
 
 # Stage 1 - bundle base image + runtime
 FROM python:${RUNTIME_VERSION}-slim-buster AS python-base
@@ -14,7 +14,7 @@ FROM python:${RUNTIME_VERSION}-slim-buster AS python-base
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         cmake \
-        libgl1-mesa-glx \
+        libgl1 \
         ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
