@@ -226,8 +226,8 @@ def configure_s3_trigger(function_arn, bucket_name):
                         'Filter': {
                             'Key': {
                                 'FilterRules': [
-                                    {'Name': 'suffix', 'Value': '.mp4'},
-                                    {'Name': 'suffix', 'Value': '.MP4'}
+                                    # Combined suffix rules into a single .mp4 filter
+                                    {'Name': 'suffix', 'Value': '.mp4'}
                                 ]
                             }
                         }
