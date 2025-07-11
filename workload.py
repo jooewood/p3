@@ -194,7 +194,7 @@ def main_workload_generator():
 
         upload_files(test_case_name)
         
-        print("\n--- Waiting for Lambda processing to complete (approx. 60-120 seconds per video) ---")
+        print("\n--- Waiting for Lambda processing to complete")
         # A more robust solution would poll S3 for output files or use SQS/SNS for completion
         # For simplicity, we'll wait a fixed amount of time. Adjust as needed.
         time.sleep(10) # Wait for each video to process
