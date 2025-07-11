@@ -124,7 +124,7 @@ def create_or_update_lambda_function(image_uri, role_arn):
                 'ImageUri': image_uri
             },
             PackageType='Image',
-            Handler=LAMBDA_HANDLER,
+            # Removed 'Handler' parameter as it's not supported for container images
             # Removed 'Runtime' parameter as it's not supported for container images
             Timeout=LAMBDA_TIMEOUT,
             MemorySize=LAMBDA_MEMORY,
@@ -148,6 +148,7 @@ def create_or_update_lambda_function(image_uri, role_arn):
             lambda_client.update_function_configuration(
                 FunctionName=LAMBDA_FUNCTION_NAME,
                 Role=role_arn,
+                # Removed 'Handler' parameter for consistency
                 # Removed 'Runtime' parameter for consistency
                 Timeout=LAMBDA_TIMEOUT,
                 MemorySize=LAMBDA_MEMORY,
