@@ -87,11 +87,14 @@ def verify_output(test_case_name, mapping_file_path):
         return False
 
     all_passed = True
+    total_files = 0
+    passed_files = 0
     for output_file in output_files:
         video_name_without_ext = os.path.splitext(output_file)[0]
         original_video_name = video_name_without_ext + ".mp4" # Reconstruct original video name
 
         if original_video_name in expected_mapping:
+            total_files += 1
             expected_major = expected_mapping[original_video_name]["major"]
             expected_year = expected_mapping[original_video_name]["year"]
 
@@ -124,6 +127,7 @@ def verify_output(test_case_name, mapping_file_path):
                     if found_student:
                         if found_student['major'] == expected_major and found_student['year'] == expected_year:
                             print(f"  PASS: {output_file} - Recognized '{actual_name}' with correct major '{actual_major}' and year '{actual_year}'.")
+                            passed_files += 1
                         else:
                             print(f"  FAIL: {output_file} - Recognized '{actual_name}' but expected major '{expected_major}' and year '{expected_year}', got '{actual_major}' and '{actual_year}'.")
                             all_passed = False
@@ -138,6 +142,12 @@ def verify_output(test_case_name, mapping_file_path):
                 all_passed = False
         else:
             print(f"  WARNING: Output file {output_file} does not have an explicit expected mapping.")
+
+    if total_files > 0:
+        accuracy = passed_files / total_files
+        print(f"\nAccuracy: {passed_files}/{total_files} = {accuracy:.2%}")
+    else:
+        print("\nNo files to verify accuracy.")
 
     if all_passed:
         print("\nAll verified outputs passed!")
