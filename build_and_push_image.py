@@ -142,12 +142,23 @@ def create_or_update_lambda_function(image_uri, role_arn):
             # We can still attempt to update, but log the warning.
             print(f"Warning: Waiter for function_updated failed. May proceed with update if function is not stuck. Error: {e}")
 
-        current_config = lambda_client.get_function_configuration(FunctionName=LAMBDA_FUNCTION_NAME)
-        current_image_uri = current_config['Code']['ImageUri']
-        current_timeout = current_config['Timeout']
-        current_memory = current_config['MemorySize']
-        current_role_arn = current_config['Role']
-        current_env_vars = current_config.get('Environment', {}).get('Variables', {})
+        # Fetch current configuration AFTER waiting, and safely access keys
+        try:
+            current_config = lambda_client.get_function_configuration(FunctionName=LAMBDA_FUNCTION_NAME)
+            current_code_info = current_config.get('Code', {})
+            current_image_uri = current_code_info.get('ImageUri') # Safely get ImageUri
+            current_timeout = current_config.get('Timeout')
+            current_memory = current_config.get('MemorySize')
+            current_role_arn = current_config.get('Role')
+            current_env_vars = current_config.get('Environment', {}).get('Variables', {})
+
+            if not current_image_uri:
+                print(f"Warning: Could not retrieve current_image_uri for '{LAMBDA_FUNCTION_NAME}'. This might indicate an incomplete function state. Forcing code update.")
+                # If image URI is missing, force an update to ensure it's set
+                current_image_uri = "FORCE_UPDATE" # Use a dummy value to trigger update
+        except ClientError as e:
+            print(f"Error retrieving current function configuration: {e}")
+            raise
 
         # Check if code update is needed
         if current_image_uri != image_uri:
