@@ -151,7 +151,8 @@ def create_or_update_lambda_function(image_uri, role_arn):
                 MemorySize=LAMBDA_MEMORY,
                 Environment={
                     'Variables': desired_env_vars
-                }
+                },
+                ReservedConcurrentExecutions=100
             )
             print(f"Waiting for configuration update for '{LAMBDA_FUNCTION_NAME}' to complete...")
             waiter.wait(FunctionName=LAMBDA_FUNCTION_NAME) # Wait for config update to finish
@@ -179,7 +180,8 @@ def create_or_update_lambda_function(image_uri, role_arn):
                     'OUTPUT_BUCKET_NAME': OUTPUT_BUCKET_NAME,
                     'DYNAMODB_TABLE_NAME': DYNAMODB_TABLE_NAME
                 }
-            }
+            },
+            ReservedConcurrentExecutions=100
         )
         print(f"Lambda function '{LAMBDA_FUNCTION_NAME}' created successfully.")
         # After creation, wait for it to be active
