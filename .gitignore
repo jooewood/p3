@@ -4,6 +4,7 @@
 __pycache__/
 key.py
 env.list
+README.md
 
 # Virtual environment
 venv/
